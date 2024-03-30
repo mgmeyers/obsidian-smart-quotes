@@ -288,9 +288,9 @@ export default class SmartTypography extends Plugin {
 
     // Codemirror 5
     this.legacyLastUpdate = new WeakMap();
-//    this.registerCodeMirror((cm: CodeMirror.Editor) => {
-//      cm.on("beforeChange", this.beforeChangeHandler);
-//    });
+    this.registerCodeMirror((cm: CodeMirror.Editor) => {
+      cm.on("beforeChange", this.beforeChangeHandler);
+    });
 
     this.addCommand({
         id: "smart-typography-apply-quotations",
@@ -301,9 +301,9 @@ export default class SmartTypography extends Plugin {
 
   onunload() {
     this.legacyLastUpdate = null;
-//    this.app.workspace.iterateCodeMirrors((cm) => {
-//      cm.off("beforeChange", this.beforeChangeHandler);
-//    });
+    this.app.workspace.iterateCodeMirrors((cm) => {
+      cm.off("beforeChange", this.beforeChangeHandler);
+    });
   }
 
   beforeChangeHandler = (
