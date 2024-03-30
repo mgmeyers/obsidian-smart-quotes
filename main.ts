@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Editor, MarkdownView, Plugin, PluginSettingTab, Setting } from "obsidian";
 import {
   ChangeSpec,
   EditorSelection,
@@ -31,6 +31,7 @@ import { syntaxTree, tokenClassNodeProp } from "@codemirror/language";
 
 import { SmartTypographySettings } from "types";
 import { Tree } from "@lezer/common";
+import { applyQuotes } from "apply-quotes";
 
 const DEFAULT_SETTINGS: SmartTypographySettings = {
   curlyQuotes: true,
@@ -289,6 +290,12 @@ export default class SmartTypography extends Plugin {
     this.legacyLastUpdate = new WeakMap();
     this.registerCodeMirror((cm: CodeMirror.Editor) => {
       cm.on("beforeChange", this.beforeChangeHandler);
+    });
+
+    this.addCommand({
+        id: "smart-typography-apply-quotations",
+        name: "Apply Quotation Typography",
+        editorCallback: (editor: Editor, _view: MarkdownView) => applyQuotes(this.settings, editor)
     });
   }
 
