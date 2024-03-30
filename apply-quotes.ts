@@ -63,9 +63,6 @@ function applyQuotePreferencesToBlob(text: string, settings: SmartTypographySett
     return text.split("\n").map(func).join("\n");
 }
 
-function applyQuotePreferencesToLine(line: string, settings: SmartTypographySettings): string {
-    return applyDoubleQuotePreferencesOnLine(line, settings);
-}
 
 // These rules are dumb, and whoever wrote them should feel bad.
 // Let's step through these...
@@ -88,34 +85,85 @@ function applyQuotePreferencesToLine(line: string, settings: SmartTypographySett
 // Sorry if you're doing a multi-paragraph quote; I'm going to consider lines in isolation for simplicity.
 // Sorry if you have the 'n' contraction; reconsider your life.
 
-function applyDoubleQuotePreferencesOnLine(line: string, settings: SmartTypographySettings): string {
-    var newline = "";
+// Don't even get me started on single-quotes nested inside double-quotes.
+
+enum QuotePosition {
+    Opening, Closing, Enclosed
+}
+
+interface QuoteInfo {
+    isSingle: boolean; // always true for me, amirite?
+    index: number;
+    position: QuotePosition;
+}
+
+function applyQuotePreferencesToLine(line: string, settings: SmartTypographySettings): string {
+    var newline: string[] = [];
     if(line == null || line.length === 0)
-        return newline;
+        return "";
     
     var nextChar = line.charAt(0);
     var char = null;
     var i = 0;
+
+    var quotes: QuoteInfo[] = [];
 
     while(i < line.length) {
         var prevChar = char;
         char = nextChar;
         nextChar = i < line.length - 1 ? line.charAt(i + 1) : null;
 
-        if(char === '"'){
-            if(i === 0 || prevChar === " "){
-                newline += settings.openDouble;
-            } else if(nextChar === " " || i === line.length - 1){
-                newline += settings.closeDouble;
+        newline.push(char);
+
+        if(char === '"' || char === "'"){ // javascript is my passion.
+            var isWsBefore = isWhitespace(prevChar);
+            var isWsAfter = isWhitespace(nextChar);
+
+            var pos: QuotePosition = QuotePosition.Opening;
+            if(isWsBefore) {
+                pos = QuotePosition.Opening;
+            } else if(isWsAfter) {
+                pos = QuotePosition.Closing;
             } else {
-                newline += settings.openDouble; // fallback; assume open quote
+                pos = QuotePosition.Enclosed;
             }
-        } else {
-            newline += char;
+
+            quotes.push({
+                isSingle: char === "'",
+                index: i,
+                position: pos
+            });
         }
 
         i++;
     }
 
-    return newline;
+    quotes.forEach((quote) => {
+        var c: string;
+        if(quote.isSingle) {
+            // TODO - eternal improvement b/c single quotes SUCK.
+            if(quote.position === QuotePosition.Opening) {
+                c = settings.openSingle;
+            } else {
+                c = settings.closeSingle;
+            }
+        }
+        else {
+            if(quote.position === QuotePosition.Closing) {
+                c = settings.closeDouble;
+            } else {
+                c = settings.openDouble;
+            }
+        }
+        newline[quote.index] = c;
+    });
+
+    return newline.join("");
+}
+
+function isWhitespace(c: string | null): boolean {
+    if(c == null)
+        return true;
+
+    return c === " " || c === "\t";
 }
